@@ -6,6 +6,11 @@ pub use err::AppErr;
 
 mod runner;
 
+mod cmdline;
+pub use cmdline::Cmdline;
+mod phrases;
+pub use phrases::Phrases;
+
 use std::time::Duration;
 
 #[derive(Debug, PartialEq)]
@@ -18,35 +23,32 @@ pub enum Step {
 
 #[derive(Debug)]
 pub struct TestSpec {
-    cmd: String,
-    args: Vec<String>,
+    cmdline: Cmdline,
     timeout: Duration,
     steps: Vec<Step>,
-    exit_code: i32,
+    expected_exit_code: i32,
 }
 
 impl TestSpec {
     pub fn new(
-        cmd: String,
-        args: Vec<String>,
+        cmdline: Cmdline,
         timeout: Duration,
         steps: Vec<Step>,
-        exit_code: i32,
+        expected_exit_code: i32,
     ) -> Self {
         Self {
-            cmd,
-            args,
+            cmdline,
             timeout,
             steps,
-            exit_code,
+            expected_exit_code,
         }
     }
 
     pub fn execute(&self) -> TestResult {
         match runner::run(self) {
-            Ok(Some(exit_code)) if exit_code == self.exit_code => TestResult::Success, // OK
+            Ok(Some(exit_code)) if exit_code == self.expected_exit_code => TestResult::Success, // OK
             Ok(Some(actual)) => TestResult::UnexpectedExitCode {
-                expected: self.exit_code,
+                expected: self.expected_exit_code,
                 actual,
             },
             Ok(None) => TestResult::Failure("kill per signal".to_string()), // FIXME

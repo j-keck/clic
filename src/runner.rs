@@ -8,8 +8,8 @@ use timeout_readwrite::TimeoutReader;
 
 pub fn run(spec: &TestSpec) -> Result<Option<i32>, Box<dyn Error>> {
     // execute the test command
-    let mut proc = Command::new(spec.cmd.clone())
-        .args(spec.args.clone())
+    let mut proc = Command::new(spec.cmdline.cmd.clone())
+        .args(spec.cmdline.args.clone())
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -29,7 +29,7 @@ pub fn run(spec: &TestSpec) -> Result<Option<i32>, Box<dyn Error>> {
 
     // execute / validate each step
     for step in spec.steps.iter() {
-        debug!(target: &spec.cmd, "next step: {:?}", step);
+        debug!(target: &spec.cmdline.cmd, "next step: {:?}", step);
         match step {
             Step::Comment(comment) => println!("  {}", comment),
             Step::Cmd(cmd) => writeln!(proc_stdin, "{}", cmd)?,

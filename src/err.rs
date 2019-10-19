@@ -3,6 +3,7 @@ use std::fmt;
 
 #[derive(Debug)]
 pub enum AppErr {
+    InvalidArgs(String),
     SpawnError(Box<dyn Error>),
     ResponseTimeout,
     UnexpectedResponse { expected: String, actual: String },
@@ -10,10 +11,12 @@ pub enum AppErr {
 
 impl fmt::Display for AppErr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use AppErr::*;
         match self {
-            AppErr::SpawnError(e) => write!(f, "Spawn subprocess error: {}", e),
-            AppErr::ResponseTimeout => write!(f, "Timeout waiting for response"),
-            AppErr::UnexpectedResponse { expected, actual } => write!(
+            InvalidArgs(msg) => write!(f, "Invalid command line: {}", msg),
+            SpawnError(e) => write!(f, "Spawn subprocess error: {}", e),
+            ResponseTimeout => write!(f, "Timeout waiting for response"),
+            UnexpectedResponse { expected, actual } => write!(
                 f,
                 "Unexpected response\n  expected: '{}'\n  acutal  : '{}'",
                 expected, actual
