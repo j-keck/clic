@@ -1,3 +1,4 @@
+use super::{Step, TestSpec};
 use crate::*;
 use log::debug;
 use std::error::Error;
@@ -29,12 +30,20 @@ pub fn run(spec: &TestSpec) -> Result<Option<i32>, Box<dyn Error>> {
 
     // execute / validate each step
     for step in spec.steps.iter() {
-        debug!(target: &spec.cmdline.cmd, "next step: {:?}", step);
         match step {
-            Step::Comment(comment) => println!("  {}", comment),
-            Step::Cmd(cmd) => writeln!(proc_stdin, "{}", cmd)?,
-            Step::Stdout(expected) => validate_response(&mut proc_stdout, &expected)?,
-            Step::Stderr(expected) => validate_response(&mut proc_stderr, &expected)?,
+            Step::Comment(comment) => debug!("ignore comment: {}", comment),
+            Step::Cmd(cmd) => {
+                debug!("send to process stdin: {}", cmd);
+                writeln!(proc_stdin, "{}", cmd)?;
+            }
+            Step::Stdout(expected) => {
+                debug!("expect on stdout: {}", expected);
+                validate_response(&mut proc_stdout, &expected)?;
+            }
+            Step::Stderr(expected) => {
+                debug!("expect on stderr: {}", expected);
+                validate_response(&mut proc_stderr, &expected)?;
+            }
         }
     }
 

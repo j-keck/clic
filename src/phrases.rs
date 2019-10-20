@@ -1,10 +1,5 @@
 use xstd::prelude::*;
 
-/// Example:
-/// ```
-/// let expected = vec!["phrases", "are", "words", "or", "sentences in double quotes", "or", "in single quotes"];
-/// let phrases = clic::Phrases::parse(r#"phrases are words or "sentences in double quotes" or 'in single quotes'"#);
-/// assert_eq!(&expected, phrases.vec());
 #[derive(Debug)]
 pub struct Phrases {
     phrases: Vec<String>,

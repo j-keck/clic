@@ -1,0 +1,64 @@
+#+TITLE: clic - command line interface checker
+#+PROPERTY: header-args :eval never-export
+
+* Intro
+
+Simple tool to check basic cli tools.
+
+
+* Usage
+
+#+BEGIN_SRC sh :exports results :results output
+cargo run -- --help
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+clic 0.1.0
+
+USAGE:
+    clic [FLAGS] [OPTIONS]
+
+FLAGS:
+    -h, --help       Prints help information
+    -q, --quiet
+    -V, --version
+    -v, --verbose
+
+OPTIONS:
+    -c, --cmdline <cmdline>                          Command line to execute
+    -d, --dir <dir>                                  Directory with spec files to execute
+        --expected-exit-code <expected-exit-code>    Expected exit code from the executed program [default: 0]
+    -s, --spec <spec>                                Test spec file path
+    -t, --timeout <timeout>                           [default: 1s]
+#+end_example
+
+
+** Spec file
+
+Example spec file content:
+#+BEGIN_EXAMPLE
+# this is comment
+> program input
+expected output on stdout
+! expected output on stderr
+#+END_EXAMPLE
+
+If the first line of the spec file starts with ~# clic~, this line will parsed and used as ~clic~ arguments.
+
+* Example
+
+** spec file:
+ #+BEGIN_SRC sh :eval no :tangle doc/bc.spec
+ # clic --cmdline 'bc -q'
+ > 3 * 9
+ 27
+ > 3 / 0
+ ! Runtime error (func=(main), adr=5): Divide by zero
+ > quit
+ #+END_SRC
+
+** evaluate it
+ #+BEGIN_SRC sh
+ clic --spec doc/bc.spec
+ #+END_SRC
