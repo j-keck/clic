@@ -29,20 +29,22 @@ pub fn run(spec: &TestSpec) -> Result<Option<i32>, Box<dyn Error>> {
     ));
 
     // execute / validate each step
+    let mut last_cmd = None;
     for step in spec.steps.iter() {
         match step {
             Step::Comment(comment) => debug!("ignore comment: {}", comment),
             Step::Cmd(cmd) => {
                 debug!("send to process stdin: {}", cmd);
+                last_cmd = Some(cmd);
                 writeln!(proc_stdin, "{}", cmd)?;
             }
             Step::Stdout(expected) => {
                 debug!("expect on stdout: {}", expected);
-                validate_response(&mut proc_stdout, &expected)?;
+                validate_response(&last_cmd, &mut proc_stdout, &expected)?;
             }
             Step::Stderr(expected) => {
                 debug!("expect on stderr: {}", expected);
-                validate_response(&mut proc_stderr, &expected)?;
+                validate_response(&last_cmd, &mut proc_stderr, &expected)?;
             }
         }
     }
@@ -52,12 +54,19 @@ pub fn run(spec: &TestSpec) -> Result<Option<i32>, Box<dyn Error>> {
     proc.wait().map(|s| s.code()).map_err(|e| e.into())
 }
 
-fn validate_response<R: BufRead>(reader: &mut R, expected: &str) -> Result<(), Box<dyn Error>> {
+fn validate_response<R: BufRead>(
+    last_cmd: &Option<&String>,
+    reader: &mut R,
+    expected: &str,
+) -> Result<(), Box<dyn Error>> {
     let mut actual = String::new();
     reader
         .read_line(&mut actual)
         .map_err::<Box<dyn Error>, _>(|e| match e.kind() {
-            std::io::ErrorKind::TimedOut => AppErr::ResponseTimeout.into(),
+            std::io::ErrorKind::TimedOut => {
+                let last_cmd = last_cmd.cloned();
+                AppErr::ResponseTimeout { last_cmd }.into()
+            }
             _ => e.into(),
         })?;
     let actual = actual.trim_end_matches('\n');
@@ -65,7 +74,12 @@ fn validate_response<R: BufRead>(reader: &mut R, expected: &str) -> Result<(), B
     if expected != actual {
         let expected = expected.to_string();
         let actual = actual.to_string();
-        return Err(AppErr::UnexpectedResponse { expected, actual }.into());
+        return Err(AppErr::UnexpectedResponse {
+            last_cmd: last_cmd.cloned(),
+            expected,
+            actual,
+        }
+        .into());
     }
     Ok(())
 }

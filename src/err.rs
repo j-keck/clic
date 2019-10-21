@@ -5,8 +5,14 @@ use std::fmt;
 pub enum AppErr {
     InvalidArgs(String),
     SpawnError(Box<dyn Error>),
-    ResponseTimeout,
-    UnexpectedResponse { expected: String, actual: String },
+    ResponseTimeout {
+        last_cmd: Option<String>,
+    },
+    UnexpectedResponse {
+        last_cmd: Option<String>,
+        expected: String,
+        actual: String,
+    },
 }
 
 impl fmt::Display for AppErr {
@@ -15,11 +21,27 @@ impl fmt::Display for AppErr {
         match self {
             InvalidArgs(msg) => write!(f, "Invalid command line: {}", msg),
             SpawnError(e) => write!(f, "Spawn subprocess error: {}", e),
-            ResponseTimeout => write!(f, "Timeout waiting for response"),
-            UnexpectedResponse { expected, actual } => write!(
+            ResponseTimeout { last_cmd } => write!(
                 f,
-                "Unexpected response\n  expected: '{}'\n  acutal  : '{}'",
-                expected, actual
+                "Timeout waiting for response{}",
+                last_cmd
+                    .as_ref()
+                    .map(|cmd| format!(" for input: '{}'", cmd))
+                    .unwrap_or("".to_string()),
+            ),
+            UnexpectedResponse {
+                last_cmd,
+                expected,
+                actual,
+            } => write!(
+                f,
+                "Unexpected response{}\n  expected: '{}'\n  acutal  : '{}'",
+                last_cmd
+                    .as_ref()
+                    .map(|cmd| format!(" for input: '{}'", cmd))
+                    .unwrap_or("".to_string()),
+                expected,
+                actual
             ),
         }
     }
