@@ -62,17 +62,16 @@ fn run_spec(args: &Args, path: &std::path::Path) {
         {
             TestResult::Success => info!("Success"),
             TestResult::UnexpectedExitCode { expected, actual } => {
-                warn!(
-                "Failure - unexpected exit code - expected: {}, actual: {}",
-                expected, actual
+                eprintln!(
+                    "Failure - unexpected exit code - expected: {}, actual: {}",
+                    expected, actual
                 );
                 process::exit(1);
             }
-            ,
             TestResult::Failure(msg) => {
-                warn!("Failure: {}", msg);
+                eprintln!("Failure: {}", msg);
                 process::exit(1);
-            },
+            }
         };
     }
 }
