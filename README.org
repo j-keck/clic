@@ -5,16 +5,15 @@
 
 Simple tool to check basic cli tools.
 
-
 * Usage
 
 #+BEGIN_SRC sh :exports results :results output
-cargo run -- --help
+clic --help
 #+END_SRC
 
 #+RESULTS:
 #+begin_example
-clic 0.1.0
+clic 0.1.1
 
 USAGE:
     clic [FLAGS] [OPTIONS]
@@ -33,8 +32,8 @@ OPTIONS:
     -t, --timeout <timeout>                           [default: 1s]
 #+end_example
 
-
-** Spec file
+~clic~ can verify a single spec file, or it can process all files (with a ~.spec~ sufffix) in a given directory.
+The spec file is a simple text file, where each line contains an instruction.
 
 Example spec file content:
 #+BEGIN_EXAMPLE
@@ -44,21 +43,72 @@ expected output on stdout
 ! expected output on stderr
 #+END_EXAMPLE
 
+Lines with starts with a
+  - ~#~ are comments and are ignored
+  - ~>~ are program inputs
+  - ~!~ are expected output on stderr
+  - anything else are expected output on stdout
+
 If the first line of the spec file starts with ~# clic~, this line will parsed and used as ~clic~ arguments.
 
 * Example
 
-** spec file:
- #+BEGIN_SRC sh :eval no :tangle doc/bc.spec
- # clic --cmdline 'bc -q'
- > 3 * 9
- 27
- > 3 / 0
- ! Runtime error (func=(main), adr=5): Divide by zero
- > quit
- #+END_SRC
+As an example we use the ~bc~ tool. In the spec file we define the program arguments,
+and the interactive session:
 
-** evaluate it
- #+BEGIN_SRC sh
- clic --spec doc/bc.spec
- #+END_SRC
+#+BEGIN_SRC text :eval no :tangle doc/examples/bc.spec
+  # clic --cmdline 'bc -q'
+  > 3 * 9
+  27
+  > 3 / 0
+  ! Runtime error (func=(main), adr=5): Divide by zero
+  > quit
+  #+END_SRC
+
+to verify the spec file, exeucte ~clic~ with the file as an argument:
+#+BEGIN_SRC sh :results output :exports both
+clic --spec doc/examples/bc.spec
+#+END_SRC
+
+#+RESULTS:
+: validate spec: doc/examples/bc.spec
+: Success
+
+
+You can start ~clic~ with the ~--verbose~ flag to see what's going on:
+#+BEGIN_SRC sh :results output :exports both
+clic --spec doc/examples/bc.spec --verbose
+#+END_SRC
+
+#+RESULTS:
+: validate spec: doc/examples/bc.spec
+: send to process stdin: 3 * 9
+: expect on stdout: 27
+: send to process stdin: 3 / 0
+: expect on stderr: Runtime error (func=(main), adr=5): Divide by zero
+: send to process stdin: quit
+: Success
+
+
+*** Mismatch
+
+If ~clic~ find's a mismatch, it will stop the execution and print the difference.
+
+When we run ~clic~ with this *buggy* spec file:
+#+BEGIN_SRC text :eval no :tangle doc/examples/bc-err.spec
+# clic --cmdline 'bc -q'
+> 3 * 9
+72
+#+END_SRC
+
+It will abort and displays the difference
+#+BEGIN_SRC sh :results output :exports both
+# ignore that 'exit 0' - it's for my used doc setup
+clic --spec doc/examples/bc-err.spec; exit 0
+#+END_SRC
+
+#+RESULTS:
+: validate spec: doc/examples/bc-err.spec
+: Failure: Unexpected response for input: '3 * 9'
+:   expected: '72'
+:   acutal  : '27'
