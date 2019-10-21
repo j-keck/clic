@@ -2,7 +2,7 @@ use clic::*;
 use std::error::Error;
 use std::{fs, ffi::OsStr, io::Write, process};
 use log::*;
-use env_logger::Env;
+use env_logger::{Env, Target};
 
 #[paw::main]
 fn main(args: Args) -> Result<(), Box<dyn Error>> {
@@ -12,6 +12,7 @@ fn main(args: Args) -> Result<(), Box<dyn Error>> {
         _         => "info",
     };
     env_logger::from_env(Env::default().default_filter_or(default_log_level))
+        .target(Target::Stdout)
         .format(|buf, record| {
             writeln!(buf, "{}", record.args())
         }).init();
